@@ -1,0 +1,20 @@
+function while_read_LINE_bottom_FD_OUT
+{
+    # Zerar o arquivo de saída
+    >$OUTFILE
+
+    # Associar saída padrão ao descritor de arquivo 4
+    # e redirecionar saída padrão para $OUTFILE
+    exec 4<&1
+    exec 1> $OUTFILE
+
+    while read LINE
+    do
+        echo "$LINE"
+        :
+    done < $INFILE
+
+    # Restaurar saída padrão e fechar o descritor 4
+    exec 1<&4
+    exec 4>&-
+}
