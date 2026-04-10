@@ -1,0 +1,23 @@
+while_line_outfile_FD_IN() {
+
+    [[ ! -r "$INFILE" ]] && {
+        print "ERRO: não é possível ler $INFILE" >&2
+        return 1
+    }
+
+    : > "$OUTFILE"
+
+    # Abrir INFILE no FD 3
+    exec 3< "$INFILE"
+
+    # Ler linha por linha via FD 3
+    while IFS= read -r LINE <&3
+    do
+        print -- "$LINE" >> "$OUTFILE"
+    done
+
+    # Fechar FD 3
+    exec 3<&-
+
+    return 0
+}
