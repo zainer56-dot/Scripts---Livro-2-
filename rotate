@@ -1,0 +1,14 @@
+rotate() {
+
+    typeset INTERVAL=${INTERVAL:-1}
+    typeset RCOUNT=0
+    typeset SPINNER='-\|/'
+
+    while :   # loop infinito
+    do
+        printf '\r%c' "${SPINNER:RCOUNT:1}"
+        sleep "$INTERVAL"
+
+        (( RCOUNT = (RCOUNT + 1) % 4 ))
+    done
+}
