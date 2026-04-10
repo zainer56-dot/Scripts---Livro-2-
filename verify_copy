@@ -1,0 +1,67 @@
+verify_copy ()
+{
+   MYLOGFILE="${WORK_DIR}/verify_rsync_copy.log"
+   : > "$MYLOGFILE"
+
+   print "\nStarting rsync verification on $THIS_HOST\n" | tee -a "$MYLOGFILE"
+
+   for M in $MACHINE_LIST
+   do
+      for DS in $(cat "$DIR_LIST_FILE")
+      do
+         print "\nVerifying $DS on $M ..." | tee -a "$MYLOGFILE"
+
+         rsync -navc \
+               --delete \
+               "$DS/" \
+               "$M:$DS/" \
+               >> "$MYLOGFILE" 2>&1
+
+         if (( $? != 0 ))
+         then
+            print "\nERROR: Verification failed for $DS on $M" | tee -a "$MYLOGFILE"
+            return 1
+         fi
+      done
+   done
+
+   print "\nSUCCESS: All rsync copies verified successfully.\n" | tee -a "$MYLOGFILE"
+   return 0
+}
+#BLOCO PRINCIPAL 
+ERROR=0
+TOTAL=0
+
+for M in $MACHINE_LIST
+do
+   for DS in $(cat "$DIR_LIST_FILE")
+   do
+      print "Starting rsync of $DS to $M"
+      $RSYNC -avz --delete "$DS/" "$M:$DS/" &
+      PIDS[$TOTAL]=$!
+      TOTAL=$(( TOTAL + 1 ))
+   done
+done
+
+# Aguarda todos os processos rsync
+for (( i=0; i<TOTAL; i++ ))
+do
+   wait "${PIDS[$i]}"
+   RC=$?
+
+   if (( RC != 0 ))
+   then
+      print "ERROR: rsync PID ${PIDS[$i]} failed (RC=$RC)"
+      ERROR=1
+   fi
+done
+
+# Verificação
+if (( ERROR == 0 ))
+then
+   print "\nAll rsync jobs completed. Starting verification...\n"
+   verify_copy || exit 3
+else
+   print "\nERROR: One or more rsync jobs failed — skipping verification."
+   exit 4
+fi
