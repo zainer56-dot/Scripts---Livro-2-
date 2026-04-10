@@ -1,0 +1,13 @@
+function show_all_instances_status
+{
+    for INSTANCE in $(show_oratab_instances)
+    do
+        ps -ef | grep ora | grep $INSTANCE | grep -v grep >/dev/null 2>&1
+        if (( $? != 0 ))
+        then
+            echo "\n$INSTANCE is NOT currently running $(date)\n"
+        else
+            echo "\n$INSTANCE is currently running OK $(date)\n"
+        fi
+    done
+}
