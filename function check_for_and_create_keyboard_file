@@ -1,0 +1,39 @@
+function check_for_and_create_keyboard_file
+{
+  # Se o arquivo de teclado não existir ou estiver vazio,
+  # solicitar ao usuário para carregar o layout padrão.
+
+  if [[ ! -s "$KEYBOARD_FILE" ]]
+  then
+    printf "\n\nERRO: Arquivo de teclado ausente\n"
+    printf "\nVocê gostaria de carregar o layout de teclado padrão?"
+    printf "\n\t(S/N): "
+
+    read REPLY
+    typeset -u REPLY   # converte para maiúsculas
+
+    if [[ "$REPLY" != "S" && "$REPLY" != "Y" ]]
+    then
+      printf "\n\nERRO: Este shell script não pode operar\n"
+      printf "sem um arquivo de dados de teclado localizado em:\n"
+      printf "==> %s\n\n" "$KEYBOARD_FILE"
+      printf "Este arquivo espera um caractere por linha.\n"
+      printf "\t...SAINDO...\n\n"
+      exit 3
+    fi
+
+    load_default_keyboard
+
+    # Verificar novamente se o arquivo foi criado corretamente
+    if [[ ! -s "$KEYBOARD_FILE" ]]
+    then
+      printf "\nERRO: O arquivo de teclado não foi criado corretamente.\n"
+      printf "\t...SAINDO...\n\n"
+      exit 4
+    fi
+
+    printf "\nPressione ENTER quando estiver pronto para continuar: "
+    read _
+    clear
+  fi
+}
