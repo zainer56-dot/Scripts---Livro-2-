@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+#
+# SCRIPT: ftp-get-file.exp
+# AUTHOR: Zainer Araujo
+# PURPOSE:
+#   Conecta via FTP, autentica, entra em um diretório
+#   remoto e faz o download de um arquivo específico.
+#
+# NOTA:
+#   FTP envia senha em texto claro.
+#   Use apenas em ambientes controlados.
+#
+
+##############################################
+# CONFIGURAÇÃO DE MODO CONSERVADOR
+##############################################
+set force_conservative 0
+# Defina como 1 para forçar envio lento de caracteres
+
+if { $force_conservative } {
+   set send_slow {1 .1}
+   proc send {ignore arg} {
+      sleep .1
+      exp_send -s -- $arg
+   }
+}
+
+##############################################
+# VARIÁVEIS
+##############################################
+set timeout -1
+set FTP_HOST "unixbr2000"
+set FTP_USER "prodmgr"
+set FTP_PASS "Abc1234"
+set REMOTE_DIR "/scripts"
+set FILE_NAME "random_file.out"
+
+##############################################
+# INÍCIO DA SESSÃO FTP
+##############################################
+spawn ftp $FTP_HOST
+match_max 100000
+
+##############################################
+# LOGIN
+##############################################
+expect {
+   "Name*" {
+      send -- "$FTP_USER\r"
+   }
+   timeout {
+      puts "ERROR: Timeout waiting for FTP username prompt"
+      exit 1
+   }
+}
+
+expect {
+   "Password:" {
+      send -- "$FTP_PASS\r"
+   }
+   timeout {
+      puts "ERROR: Timeout waiting for FTP password prompt"
+      exit 2
+   }
+}
+
+##############################################
+# NAVEGA PARA O DIRETÓRIO REMOTO
+##############################################
+expect "ftp>"
+send -- "cd $REMOTE_DIR\r"
+
+##############################################
+# OBTÉM O ARQUIVO
+##############################################
+expect "ftp>"
+send -- "get $FILE_NAME\r"
+
+##############################################
+# FINALIZA A SESSÃO
+##############################################
+expect "ftp>"
+send -- "bye\r"
+
+expect eof
+exit 0
