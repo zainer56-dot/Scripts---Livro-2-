@@ -1,0 +1,14 @@
+while_read_LINE_bottom() {
+
+    [[ ! -r "$INFILE" ]] && {
+        printf "ERRO: não é possível ler %s\n" "$INFILE" >&2
+        return 1
+    }
+
+    : > "$OUTFILE"
+
+    while IFS= read -r LINE
+    do
+        printf '%s\n' "$LINE"
+    done < "$INFILE" >> "$OUTFILE"
+}
