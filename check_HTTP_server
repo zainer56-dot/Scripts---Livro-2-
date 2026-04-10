@@ -1,0 +1,40 @@
+check_HTTP_server ()
+{
+    LINX="/usr/local/bin/lynx"
+    URL="$1"
+    URLFILE="/tmp/HTTP.$$"
+
+    # Verifica se lynx existe
+    if [[ ! -x "$LINX" ]]
+    then
+        echo "\nERROR: lynx não encontrado em $LINX\n"
+        return 2
+    fi
+
+    # Acessa a URL e captura apenas o cabeçalho HTTP
+    $LINX -head -source "$URL" > "$URLFILE" 2>/dev/null
+
+    if (( $? != 0 ))
+    then
+        echo "\n$URL – Unable to connect\n"
+        rm -f "$URLFILE"
+        return 1
+    fi
+
+    # Extrai o código HTTP (ex: HTTP/1.1 200 OK)
+    RC=$(awk '/^HTTP/{print $2; exit}' "$URLFILE")
+
+    case "$RC" in
+        200|301|302|401)
+            echo "\nServidor HTTP está OK (HTTP $RC)\n"
+            ;;
+        "")
+            echo "\nERROR: Não foi possível determinar o status HTTP\n"
+            ;;
+        *)
+            echo "\nERROR: Erro no Servidor HTTP (HTTP $RC)\n"
+            ;;
+    esac
+
+    rm -f "$URLFILE"
+}
