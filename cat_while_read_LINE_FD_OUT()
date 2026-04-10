@@ -1,0 +1,27 @@
+cat_while_read_LINE_FD_OUT() {
+
+    # Verificações básicas
+    [[ ! -r "$INFILE" ]] && {
+        print "ERRO: não é possível ler $INFILE" >&2
+        return 1
+    }
+
+    # Zerar/criar OUTFILE
+    : > "$OUTFILE"
+
+    # Salvar stdout no FD 4 e redirecionar stdout para OUTFILE
+    exec 4>&1
+    exec 1> "$OUTFILE"
+
+    # Ler arquivo sem subshell e sem cat
+    while IFS= read -r LINE
+    do
+        print -- "$LINE"
+    done < "$INFILE"
+
+    # Restaurar stdout e fechar FD 4
+    exec 1>&4
+    exec 4>&-
+
+    return 0
+}
