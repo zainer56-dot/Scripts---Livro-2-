@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+set timeout 20
+
+# Usuário e host
+set user "zainer"
+set host "unixbr2000"
+set password "abc123"
+
+# Conecta via SSH
+spawn ssh $user@$host
+
+expect {
+    "*yes/no*" { send "yes\r"; exp_continue }
+    "*assword:*" { send "$password\r" }
+}
+
+# Executa comandos
+expect "*$user@*" { send "who\r" }
+expect "*$user@*" { send "w\r" }
+
+# Fecha a sessão
+expect "*$user@*" { send "exit\r" }
+expect eof
