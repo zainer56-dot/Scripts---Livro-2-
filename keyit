@@ -1,0 +1,95 @@
+#!/bin/ksh
+#
+# SCRIPT: keyit
+# AUTHOR: Zainer Araujo
+# PURPOSE: Configura pares de chaves SSH entre dois hosts
+#
+
+RHOST=$1
+THIS_USER=$2
+THIS_SCRIPT=$(basename $0)
+THIS_HOST=$(hostname)
+
+usage() {
+  echo "\nUSAGE: $THIS_SCRIPT remote_host username\n"
+}
+
+success_message() {
+  KTYPE=$1
+  echo "\nSUCESSO: pares de chave $KTYPE configurados para $THIS_USER em $RHOST"
+  echo "\n$THIS_USER não deverá mais precisar de senha SSH em $RHOST"
+  echo "\nUse: ssh -l $THIS_USER $RHOST ou ssh ${THIS_USER}@${RHOST}\n"
+}
+
+failure_message() {
+  echo "\nERRO: A configuração dos pares de chave $KEYTYPE falhou"
+  echo "Certifique-se de que o OpenSSH está instalado e em execução em ambos os hosts."
+}
+
+keyit_dsa() {
+  cat ~${THIS_USER}/.ssh/id_dsa.pub | ssh ${THIS_USER}@$RHOST \
+    "mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys"
+  (( $? == 0 )) && success_message dsa || failure_message
+}
+
+keyit_rsa() {
+  cat ~${THIS_USER}/.ssh/id_rsa.pub | ssh ${THIS_USER}@$RHOST \
+    "mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys"
+  (( $? == 0 )) && success_message rsa || failure_message
+}
+
+# --- MAIN ---
+
+# Verifica usuário
+if ! /usr/bin/id $THIS_USER >/dev/null 2>&1; then
+  echo "\nERROR: $THIS_USER não é um usuário válido em $THIS_HOST\n"
+  usage
+  exit 1
+fi
+
+# Verifica SSH
+if [[ ! -x /usr/bin/ssh && ! -x /usr/local/bin/ssh ]]; then
+  echo "\nERROR: SSH não está instalado nesta máquina"
+  usage
+  exit 2
+fi
+
+# Verifica argumentos
+if [ -z "$RHOST" ] || [ -z "$THIS_USER" ]; then
+  usage
+  exit 1
+fi
+
+# Verifica host remoto
+if ! ping -c1 $RHOST >/dev/null 2>&1; then
+  echo "\nERROR: $RHOST não responde ao ping... Saindo...\n"
+  exit 2
+fi
+
+SET=0
+[ -s ~$THIS_USER/.ssh/id_dsa.pub ] && keyit_dsa && SET=1
+[ -s ~$THIS_USER/.ssh/id_rsa.pub ] && keyit_rsa && SET=1
+
+# Se nenhuma chave existe
+if (( SET == 0 )); then
+  echo -n "\nChave pública SSH não está configurada. Deseja criar agora? (y/n): "
+  read REPLY
+  case $REPLY in
+    y|Y)
+      echo -n "Tipo de Criptografia (dsa ou rsa)?: "
+      read KEYTYPE
+      case "$KEYTYPE" in
+        dsa|DSA) KEYTYPE=dsa ;;
+        rsa|RSA) KEYTYPE=rsa ;;
+        *) echo "\nERROR: Entrada inválida... Saindo..."; exit 1 ;;
+      esac
+
+      echo "\nAceite os padrões e não digite passphrase...\n"
+      su - $THIS_USER -c "ssh-keygen -t $KEYTYPE"
+      (( $? == 0 )) && echo "\nChave criada com sucesso." && keyit_${KEYTYPE}
+      ;;
+    *)
+      # não fazer nada
+      ;;
+  esac
+fi
