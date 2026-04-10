@@ -1,0 +1,27 @@
+monitor_background_processes() {
+    local PIDS="$1"
+    local SLEEP_INTERVAL="${2:-60}"  # Intervalo opcional, padrão 60s
+    local PID
+    local REMAINING
+
+    echo "\nMonitorando processos: $PIDS"
+    echo "Início: $(date)\n"
+
+    while true; do
+        REMAINING=0
+        for PID in $PIDS; do
+            if ps -p "$PID" > /dev/null 2>&1; then
+                ((REMAINING++))
+            fi
+        done
+
+        if (( REMAINING == 0 )); then
+            break
+        fi
+
+        printf "."
+        sleep "$SLEEP_INTERVAL"
+    done
+
+    echo "\nTodos os processos finalizaram às: $(date)\n"
+}
