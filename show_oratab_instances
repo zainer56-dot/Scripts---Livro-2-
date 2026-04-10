@@ -1,0 +1,9 @@
+show_oratab_instances() {
+    if [ ! -f "$ORATAB" ]; then
+        printf "\nArquivo de instância Oracle $ORATAB não existe\n"
+        return 3
+    fi
+
+    # Lista as instâncias (primeira coluna, ignorando linhas comentadas)
+    awk -F: '!/^#/ {print $1}' "$ORATAB"
+}
